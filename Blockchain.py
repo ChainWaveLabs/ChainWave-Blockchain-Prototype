@@ -2,14 +2,15 @@ import hashlib
 import json
 from time import time
 
+
 class Blockchain(object):
 
     def __init__(self):
-        self.blockchain = [];
-        self.transactions = [];
+        self.blockchain = []
+        self.transactions = []
 
-        #Genesis block on initialization
-        self.block(prev_hash = 1, proof = 100)
+        # Genesis block on initialization
+        self.block(prev_hash=1, proof=100)
 
     '''
     A single block looks like
@@ -28,41 +29,51 @@ class Blockchain(object):
     }
     '''
 
-
     def block(self, proof, prev_hash=None):
-        #add new blocks to blockchain
+        # add new blocks to blockchain
         block = {
             'i': len(self.blockchain) + 1,
             'timestamp': time(),
-            'transactions' : self.transactions,
-            'proof' : proof,
-            'prev_hash' : prev_hash or self.hash(self.blockchain[-1]),
+            'transactions': self.transactions,
+            'proof': proof,
+            'prev_hash': prev_hash or self.hash(self.blockchain[-1]),
         }
 
-        #reset tx list
+        # reset tx list
         self.transactions = []
         self.blockchain.append(block)
         return block
 
-
-    def transaction(self,sender,recipient,amt):
-        #add new tx to transactions
-
-
+    def transaction(self, sender, recipient, amt):
+        # add new tx to transactions
         self.transactions.append({
-            'sender':sender,
+            'sender': sender,
             'recipient': recipient,
             'amt': amt
         })
-        #return the the next block # to be mined
+        # return the the next block # to be mined
         return self.last_block['index'] + 1
+
+    def PoW(self, last_proof):
+        proof = 0
+        while self.valid_proof(last_proof, proof) is False:
+            proof += 1
+
+        return proof
+
+    @staticmethod
+    def valid_proof(last_proof, proof):
+      # adjust difficulty by adding # of leading zeros
+        guess = f'{last_proof}{proof}'.encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+        return guess_hash[:4] == "0000"
 
     @staticmethod
     def hash(block):
-        #block hashing
-        pass
+        blk_string = json.dumps(block, sort_keys=True).encode()
+        return hashlib.sha3_256(blk_string).hexdigest()
 
     @property
     def last_block(self):
-        #return last block in blockchain
-        pass
+        # return last block in blockchain
+        return self.chain[-1]
