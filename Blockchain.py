@@ -1,13 +1,20 @@
+import hashlib
+import json
+from time import time
+
 class Blockchain(object):
 
     def __init__(self):
         self.blockchain = [];
         self.transactions = [];
 
+        #Genesis block on initialization
+        self.block(prev_hash = 1, proof = 100)
+
     '''
     A single block looks like
     block = {
-        'index': 1,
+        'i': 1,
         'timestamp': 1506057125.900785,
         'transactions': [
             {
@@ -17,17 +24,31 @@ class Blockchain(object):
             }
         ],
         'proof': 324984774000,
-        'previous_hash': "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        'prev_hash': "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
     }
     '''
-    def block(self):
+
+
+    def block(self, proof, prev_hash=None):
         #add new blocks to blockchain
-        pass
+        block = {
+            'i': len(self.blockchain) + 1,
+            'timestamp': time(),
+            'transactions' : self.transactions,
+            'proof' : proof,
+            'prev_hash' : prev_hash or self.hash(self.blockchain[-1]),
+        }
+
+        #reset tx list
+        self.transactions = []
+        self.blockchain.append(block)
+        return block
+
 
     def transaction(self,sender,recipient,amt):
         #add new tx to transactions
 
-        
+
         self.transactions.append({
             'sender':sender,
             'recipient': recipient,
@@ -42,10 +63,6 @@ class Blockchain(object):
         pass
 
     @property
-    def last_block(selfself):
+    def last_block(self):
         #return last block in blockchain
         pass
-
-
-###
-Example
