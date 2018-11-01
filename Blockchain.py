@@ -48,10 +48,10 @@ class Blockchain(object):
         self.blockchain.append(block)
         return block
 
-    def transaction(self, from, to, amt):
+    def transaction(self, sender, to, amt):
         # add new tx to transactions
         self.transactions.append({
-            'from': from,
+            'sender': sender,
             'to': to,
             'amt': amt
         })
@@ -93,10 +93,35 @@ blockchain = Blockchain()
 
 @app.route('/mine', methods=['GET'])
 def mine():
-  # 1. Calculate PoW
-  # 2. Reward miners by adding tx and returning coin
-  # 3. Forge new block - add it to the chain
-    return "Mine a block"
+    # 1. Calculate PoW
+    # 2. Reward miners by adding tx and returning coin
+    # 3. Forge new block - add it to the chain
+
+    last_block = blockchain.last_block
+    last_proof = last_block['proof']
+
+    # 1. calc PoW
+    proof = blockchain.PoW(last_proof)
+
+    # 2. set up tx
+    blockchain.transaction(
+        sender="0",
+        to=node_identifier,
+        amt=1
+    )
+
+    # 3. add block
+    prev_hash = blockchain.hash(last_block)
+    block = blockchain.block(proof, prev_hash)
+
+    response = {
+        'message': "Block added",
+        'i': block['index'],
+        'transactions': block['transactions'],
+        'proof': block['proof'],
+        'prev_hash': block['prev_hash']
+    }
+    return jsonify(response), 200
 
 
 @app.route('/transactions/new', methods=['POST'])
@@ -120,8 +145,9 @@ def new_transaction():
         return "Missing Values", 400
 
     index = blockchain.transaction(values['from'], values['to'], values['amt'])
-    response = {'message': f'Adding tx to Block at index {index}'
+    response = {'message': f'Adding tx to Block at index {index}'}
     return jsonify(response), 201
+
 
 @app.route('/blockchain', methods=['GET'])
 def return_blockchain():
