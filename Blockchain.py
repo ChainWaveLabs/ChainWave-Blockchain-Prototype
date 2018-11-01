@@ -4,7 +4,7 @@ from time import time
 from uuid import uuid4
 
 from textwrap import dedent
-from flask import Flask
+from flask import Flask, jsonify, request
 
 
 class Blockchain(object):
@@ -48,11 +48,11 @@ class Blockchain(object):
         self.blockchain.append(block)
         return block
 
-    def transaction(self, sender, recipient, amt):
+    def transaction(self, from, to, amt):
         # add new tx to transactions
         self.transactions.append({
-            'sender': sender,
-            'recipient': recipient,
+            'from': from,
+            'to': to,
             'amt': amt
         })
         # return the the next block # to be mined
@@ -80,9 +80,10 @@ class Blockchain(object):
     @property
     def last_block(self):
         # return last block in blockchain
-        return self.chain[-1]
+        return self.blockchain[-1]
 
 
+# FLASK / SERVER
 app = Flask(__name__)
 
 node_identifier = str(uuid4()).replace('-', '')
@@ -92,13 +93,35 @@ blockchain = Blockchain()
 
 @app.route('/mine', methods=['GET'])
 def mine():
+  # 1. Calculate PoW
+  # 2. Reward miners by adding tx and returning coin
+  # 3. Forge new block - add it to the chain
     return "Mine a block"
 
 
 @app.route('/transactions/new', methods=['POST'])
 def new_transaction():
-    return "Add a transaction"
+    """
+      Example request:
+    {
+     "from": "my address",
+     "to": "someone else's address",
+     "amount": 5
+    }
+    """
+    # 1. Check validity of sender address
+    # 2. Check validity of recipient address
+    # 3. Ensure sender has enough to send
 
+    values = request.get_json()
+    required = ['from', 'to', 'amt']
+
+    if not all(k in values for k in required):
+        return "Missing Values", 400
+
+    index = blockchain.transaction(values['from'], values['to'], values['amt'])
+    response = {'message': f'Adding tx to Block at index {index}'
+    return jsonify(response), 201
 
 @app.route('/blockchain', methods=['GET'])
 def return_blockchain():
