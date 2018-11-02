@@ -193,5 +193,41 @@ def return_blockchain():
     return jsonify(response), 200
 
 
+@app.route('/nodes/add', method=['POST'])
+def add_node():
+    values = request.get_json()
+    nodes = values.get('nodes')
+
+    if nodes is None:
+        return "Err: not a valid node list", 400
+
+    for node in nodes:
+        blockchain.add_node(node)
+
+        response = {
+            'message': 'Added new nodes',
+            'total_nodes': list(blockchain.nodes)
+        }
+
+    return jsonify(response), 201
+
+
+@app.route('/nodes/resolve', methods=['GET'])
+def consensus():
+    repl = blockchain.consensus()
+
+    if repl:
+        response = {
+            'message': 'This chain has been replaced',
+            'new_chain': blockchain.blockchain
+        }
+    else:
+        response = {
+            'message': 'This chain is the most valid',
+            'new_chain': blockchain.blockchain
+        }
+    return jsonify(response), 200
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
