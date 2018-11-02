@@ -1,9 +1,9 @@
 import hashlib
 import json
 from time import time
+from urllib.parse import urlparse
 from uuid import uuid4
-
-from textwrap import dedent
+import requests
 from flask import Flask, jsonify, request
 
 
@@ -12,31 +12,15 @@ class Blockchain(object):
     def __init__(self):
         self.blockchain = []
         self.transactions = []
+        self.nodes = set()  # using set means nodes are unique
 
         # Genesis block on initialization
         self.block(prev_hash=1, proof=100)
 
-    '''
-    A single block looks like
-    block = {
-        'i': 1,
-        'timestamp': 1506057125.900785,
-        'transactions': [
-            {
-                'sender': "8527147fe1f5426f9dd545de4b27ee00",
-                'recipient': "a77f5cdfa2934df3954a5c7c7da5df1f",
-                'amount': 5,
-            }
-        ],
-        'proof': 324984774000,
-        'prev_hash': "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
-    }
-    '''
-
     def block(self, proof, prev_hash=None):
         # add new blocks to blockchain
         block = {
-            'i': len(self.blockchain) + 1,
+            'index': len(self.blockchain) + 1,
             'timestamp': time(),
             'transactions': self.transactions,
             'proof': proof,
@@ -65,9 +49,62 @@ class Blockchain(object):
 
         return proof
 
+    def add_node(self, address):
+        # Add new node - address is ufl of node
+        url_parsed = urlparse(address)
+        self.nodes.add(url_parsed.netloc)
+
+    def validate_blockchain(self, blockchain):
+        last_block = blockchain[0]
+        cur_index = 1
+
+        # iterate through chain
+        while cur_index < len(blockchain):
+            block = blockchain[cur_index]
+
+            # check block hash
+            if block['prev_hash'] != self.hash(last_block):
+                return False
+
+            # check against PoW
+            if not self.valid_proof(last_block['proof'], block['proof']):
+                return False
+
+            last_block = block
+            cur_index += 1
+
+        return True
+
+    def consensus(self):
+        # always replace chain w/ longest chain available
+
+        nearby_nodes = self.nodes
+        new_blockchain = None
+
+        max_len = len(self.blockchain)
+
+        # check chains on nodes on the netowrk
+        for node in nearby_nodes:
+            response = requests.get(f'http://{node}/chain')
+
+            if response.status_code == 200:
+                length = response.json()['length']
+                node_chain = response.json()['blockchain']
+
+                # check length longer & chain validity
+                if length > max_len and self.validate_blockchain(node_chain):
+                    max_len = length
+                    new_blockchain = node_chain
+
+        if new_blockchain:
+            self.blockchain = new_blockchain
+            return True
+
+        return False
+
     @staticmethod
     def valid_proof(last_proof, proof):
-      # adjust difficulty by adding # of leading zeros
+            # adjust difficulty by adding # of leading zeros
         guess = f'{last_proof}{proof}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
@@ -98,10 +135,9 @@ def mine():
     # 3. Forge new block - add it to the chain
 
     last_block = blockchain.last_block
-    last_proof = last_block['proof']
 
     # 1. calc PoW
-    proof = blockchain.PoW(last_proof)
+    proof = blockchain.PoW(last_block)
 
     # 2. set up tx
     blockchain.transaction(
@@ -116,7 +152,7 @@ def mine():
 
     response = {
         'message': "Block added",
-        'i': block['index'],
+        'index': block['index'],
         'transactions': block['transactions'],
         'proof': block['proof'],
         'prev_hash': block['prev_hash']
@@ -126,26 +162,25 @@ def mine():
 
 @app.route('/transactions/new', methods=['POST'])
 def new_transaction():
-    """
-      Example request:
-    {
-     "from": "my address",
-     "to": "someone else's address",
-     "amount": 5
-    }
-    """
+
     # 1. Check validity of sender address
     # 2. Check validity of recipient address
     # 3. Ensure sender has enough to send
 
     values = request.get_json()
-    required = ['from', 'to', 'amt']
+
+    required = ['sender', 'to', 'amt']
 
     if not all(k in values for k in required):
-        return "Missing Values", 400
+        return 'Missing values', 400
 
-    index = blockchain.transaction(values['from'], values['to'], values['amt'])
+    index = blockchain.transaction(
+        values['sender'],
+        values['to'],
+        values['amt'])
+
     response = {'message': f'Adding tx to Block at index {index}'}
+
     return jsonify(response), 201
 
 

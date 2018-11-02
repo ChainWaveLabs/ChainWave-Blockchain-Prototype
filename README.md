@@ -1,6 +1,6 @@
 # ChainWave-Blockchain-Prototype
 
-Prototype/demo blockchain from scratch.
+Prototype/demo blockchain from scratch. This is not novel or new and should be considered more a showcase of blockchain development competencies.
 
 ## Basic Blockchain Functionality
 
