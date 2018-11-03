@@ -193,7 +193,7 @@ def return_blockchain():
     return jsonify(response), 200
 
 
-@app.route('/nodes/add', method=['POST'])
+@app.route('/nodes/add', methods=['POST'])
 def add_node():
     values = request.get_json()
     nodes = values.get('nodes')
@@ -230,4 +230,4 @@ def consensus():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5001)

@@ -16,4 +16,13 @@ This simple prototype consists of basic Bitcoin-like functionality including:
 
 Flask is used as the API endpoint mapping to our Python functions
 
+
+## Install & Run
+- Prereqs: python 3.7, pipenv, and Postman
+- ```pipenv install```
+- ```python Blockchain.py``
+- Import the "Blockchain Python..." postman collection json file
+- Explore the postman collection for potential actions. Remember you must mine to see new tx's
+
+
 Credit to [Daniel van Flymen](http://twitter.com/van_flymen) for his great overview "Learn Blockchains by Building One", which is the basis of this project.
